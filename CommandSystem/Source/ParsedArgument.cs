@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace SickDev.CommandSystem
 {
@@ -28,10 +29,19 @@ namespace SickDev.CommandSystem
 				if (SignatureBuilder.aliases.ContainsKey(type))
 					name = fullName = SignatureBuilder.aliases[type];
 
-				castInfoList.Add(new CastInfo(type, name, fullName));
-				//Only make array CastInfo when the parameter is not byref
-				if (type != typeof(TypedReference) && !type.IsByRef)
-					castInfoList.Add(new CastInfo(type.MakeArrayType(), name + "[]", fullName + "[]"));
+                castInfoList.Add(new CastInfo(type, name, fullName));
+                try
+				{
+                    //Only make array CastInfo when the parameter is not byref or value type
+                    if (type != typeof(TypedReference) && !type.IsByRef && !type.IsValueType && !type.IsPointer)
+                    {
+                       castInfoList.Add(new CastInfo(type.MakeArrayType(), name + "[]", fullName + "[]"));
+                    }
+                }
+				catch (Exception e)
+				{
+					throw new CommandSystemException($"ParsedArgument Exception {type.Name}", e);
+                }
 			}
 			castInfo = castInfoList.ToArray();
 		}
