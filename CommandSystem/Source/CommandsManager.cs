@@ -22,6 +22,7 @@ namespace SickDev.CommandSystem
 
 		public event OnCommandModified onCommandAdded;
 		public event OnCommandModified onCommandRemoved;
+		public event Action onCommandsLoaded;
 
 		public event NotificationsHandler.OnExceptionThrown onExceptionThrown
 		{
@@ -58,7 +59,11 @@ namespace SickDev.CommandSystem
 			thread.Start();
 		}
 
-		void LoadCommandsInternal() => Add(loader.GetCommands());
+		void LoadCommandsInternal()
+		{
+			Add(loader.GetCommands());
+			onCommandsLoaded?.Invoke();
+		}
 
 		public void Add(Command[] commands)
 		{
