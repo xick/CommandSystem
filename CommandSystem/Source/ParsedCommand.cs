@@ -28,66 +28,56 @@ namespace SickDev.CommandSystem
 
 		void GetArgs()
 		{
-			string stringArgs = raw.Substring(command.Length).Trim();
-			List<string> argsList = new List<string>();
+            string stringArgs = raw.Substring(command.Length).Trim();
+            List<string> listArgs = new List<string>();
 
-			char? groupifier = null;
-			string arg = string.Empty;
-			for (int i = 0; i < stringArgs.Length; i++)
-				HandleArgumentCharacter(stringArgs[i], ref groupifier, ref arg, argsList);
+            char? groupifier = null;
+            string arg = string.Empty;
+            foreach (char c in stringArgs)
+            {
+                //Args are separated by the separator character IF AND ONLY IF outside a group
+                if (c == separator && groupifier == null)
+                {
+                    if (!string.IsNullOrEmpty(arg))
+                    {
+                        listArgs.Add(arg);
+                        arg = string.Empty;
+                    }
+                    continue;
+                }
 
-			//If we reach the end of the string, whatever came before is the last argument
-			if (arg.Length == 0)
-				argsList.Add(arg);
+                if (IsGroupifier(c))  
+                {
+                    if (groupifier == null)  //Open group
+                        groupifier = c;
+                   
+                    else if (groupifier == c)  //Close group
+                    {
+                        listArgs.Add(arg);
+                        arg = string.Empty;
+                        groupifier = null;
+                    }
+                    //Ignore nested groupifiers
+                    else
+                        arg += c;
+                }
+                else
+                    arg += c;
+            }
 
-			args = argsList.ConvertAll(x => new ParsedArgument(x)).ToArray();
-		}
+            if (arg != string.Empty)
+                listArgs.Add(arg);
+            args = listArgs.ConvertAll(x => new ParsedArgument(x)).ToArray();
 
-		void HandleArgumentCharacter(char character, ref char? groupifier, ref string arg, List<string> argsList)
-		{
-			//If we find a separator WHILE OUTSIDE A GROUP
-			if (character == separator && groupifier == null)
-				HandleSeparator(ref arg, argsList);
-			else if (IsGroupifier(character))
-				HandleGroupifier(character, ref groupifier, ref arg, argsList);
-			//Normal characters are considered part of the argument
-			else
-				arg += character;
-		}
+        }
 
-		void HandleSeparator(ref string arg, List<string> argsList)
-		{
-			//If the argument is not empty, then this is the end of argument and thus can be added to the list
-			if (arg.Length == 0)
-			{
-				argsList.Add(arg);
-				arg = string.Empty;
-			}
-		}
+        bool IsGroupifier(char character)
+        {
+            for (int i = 0; i < groupifiers.Length; i++)
+                if (character == groupifiers[i])
+                    return true;
+            return false;
+        }
 
-		bool IsGroupifier(char character)
-		{
-			for (int i = 0; i < groupifiers.Length; i++)
-				if (character == groupifiers[i])
-					return true;
-			return false;
-		}
-
-		void HandleGroupifier(char character, ref char? groupifier, ref string arg, List<string> argsList)
-		{
-			//Open group
-			if (groupifier == null)
-				groupifier = character;
-			//If a different groupifier is used inside a group, it is considered part of the argument
-			else if (groupifier != character)
-				arg += character;
-			//If we find the same groupifier that was used to open the group, then we consider it as the end of the argument
-			else
-			{
-				argsList.Add(arg);
-				arg = string.Empty;
-				groupifier = null;
-			}
-		}
 	}
 }
